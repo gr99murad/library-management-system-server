@@ -40,7 +40,19 @@ async function run() {
       const cursor = categoriesCollection.find();
       const result = await cursor.toArray();
       res.send(result);
-    })
+    });
+
+    // books collection
+
+    const booksCollection = client.db('libraryManagement').collection('books');
+
+    app.get('/books/:category', async (req, res) => {
+      const category = req.params.category;
+      const books = await booksCollection.find({category: category}).toArray();
+      res.send(books);
+    });
+
+
 
   } finally {
     // Ensures that the client will close when you finish/error
