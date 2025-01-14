@@ -61,6 +61,13 @@ async function run() {
       res.send(book);
     });
 
+    // all books api
+
+    app.get('/books', async (req, res) => {
+      const books = await booksCollection.find().toArray();
+      res.send(books);
+    })
+
     app.post('/borrowBook', async (req, res) => {
       const {bookId, returnDate, userName, userEmail} = req.body;
       const filter = { _id: new ObjectId(bookId)};
