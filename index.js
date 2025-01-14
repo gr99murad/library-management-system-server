@@ -45,6 +45,7 @@ async function run() {
     // books collection
 
     const booksCollection = client.db('libraryManagement').collection('books');
+    const borrowedBooksCollection = client.db('libraryManagement').collection('borrowedBooks');
 
     app.get('/books/:category', async (req, res) => {
       const category = req.params.category;
@@ -55,8 +56,28 @@ async function run() {
     // api for books Id
     app.get('/book/:id', async(req, res) => {
       const id = req.params.id;
-      const book = await booksCollection.findOne({ _id: new ObjectId(id)});
+      const query = { _id: new ObjectId(id)}
+      const book = await booksCollection.findOne(query);
       res.send(book);
+    });
+
+    app.post('/borrowBook', async (req, res) => {
+      const {bookId, returnDate, userName, userEmail} = req.body;
+      const filter = { _id: new ObjectId(bookId)};
+      const updateDoc = {
+        $inc: { quantity: -1}
+      };
+      const book = await booksCollection.findOne(filter);
+      if(book.quantity > 0){
+        await booksCollection.updateOne(filter, updateDoc);
+        const borrowEntry = {bookId,returnDate,userName,userEmail};
+        await borrowedBooksCollection.insertOne(borrowEntry);
+        res.send({ success: true, message: 'Book borrowed successfully'});
+
+      }
+      else{
+        res.send({ success: false, message: 'Book out of stock'});
+      }
     });
 
 
