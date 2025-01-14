@@ -61,6 +61,33 @@ async function run() {
       res.send(book);
     });
 
+
+    // update books 
+    app.put('/book/:id', async(req, res) => {
+      const {id} = req.params;
+      const {name, author, category, rating, image} = req.body;
+
+      const filter = { _id: new ObjectId(id)};
+      const updateDoc = {
+        $set: {
+          name,
+          author,
+          category,
+          rating,
+          image,
+        },
+      };
+      try{
+        const result = await booksCollection.updateOne(filter, updateDoc);
+        res.send({ success: true, message: 'Book updated successfully'});
+
+      }
+      catch(error){
+        res.send({success: false, message: 'Failed to update book'})
+
+      }
+    });
+
     // all books api
 
     app.get('/books', async (req, res) => {
