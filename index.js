@@ -95,8 +95,48 @@ async function run() {
         res.send({success: false, message:'Error borrowing the book'});
       }
     });
-    
 
+    // post borrowed books
+    app.post('/borrowedBooks/return/:id', async(req, res) =>{
+      const {id} = req.params;
+      const {bookId} = req.body;  // user is returning bookId
+
+      const borrowedBookFilter = { _id: new ObjectId(id)};
+      const bookFilter = { _id: new ObjectId(bookId)};
+
+      try{
+        // remove book 
+        const deleteResult = await client.db('libraryManagement').collection('borrowedBooks').deleteOne(borrowedBookFilter);
+
+        if(deleteResult.deletedCount > 0){
+          const updateDoc = { $inc: {quantity: 1}};
+          const updateResult = await booksCollection.updateOne(bookFilter, updateDoc);
+
+          if(updateResult.modifiedCount > 0){
+            res.send({ success: true, message: 'Book returned successfully'});
+          } else{
+            res.send({ success: false, message: 'Failed return book'});
+
+          }
+        }
+        else{
+          res.send({ success: false, message: 'Book not found borrowed list'});
+
+        }
+      }
+      catch(error){
+        res.send({ success: false, message: 'Error returning the book'});
+      }
+
+
+    });
+    
+    // get borrowed books data
+    app.get('/borrowedBooks/:email', async(req, res) =>{
+      const { email } = req.params;
+      const borrowedBooks = await client.db('libraryManagement').collection('borrowedBooks').find({email}).toArray();
+      res.send(borrowedBooks);
+    })
     app.get('/books/:category', async (req, res) => {
       const category = req.params.category;
       const books = await booksCollection.find({category: category}).toArray();
