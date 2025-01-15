@@ -135,7 +135,21 @@ async function run() {
     app.get('/borrowedBooks/:email', async(req, res) =>{
       const { email } = req.params;
       const borrowedBooks = await client.db('libraryManagement').collection('borrowedBooks').find({email}).toArray();
-      res.send(borrowedBooks);
+
+      // fetch the details from booksCollection
+      const detailedBorrowedBooks = await Promise.all(
+        borrowedBooks.map(async (borrowedBook) => {
+          const book = await booksCollection.findOne({ _id: new ObjectId(borrowedBook.bookId)});
+
+          return{
+            ...borrowedBook,
+            image: book?.image,
+            name: book?.name,
+            category: book?.category,
+          };
+        })
+      )
+      res.send(detailedBorrowedBooks);
     })
     app.get('/books/:category', async (req, res) => {
       const category = req.params.category;
