@@ -32,10 +32,12 @@ async function run() {
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
 
 
-    // categories collection
+   
+
+    
 
     const categoriesCollection = client.db('libraryManagement').collection('categories');
-
+     // categories collection
     app.get('/categories', async(req,res) => {
       const cursor = categoriesCollection.find();
       const result = await cursor.toArray();
@@ -45,7 +47,55 @@ async function run() {
     // books collection
 
     const booksCollection = client.db('libraryManagement').collection('books');
-    const borrowedBooksCollection = client.db('libraryManagement').collection('borrowedBooks');
+    
+    app.post('/book/borrow/:id', async (req, res) => {
+      const {id} = req.params;
+      const{name, email, returnDate} = req.body;
+
+      const filter = { _id: new ObjectId(id)};
+      const book = await booksCollection.findOne(filter);
+
+      if(book.quantity <= 0){
+        return res.send({ success:false, message: 'Sorry, this book is out of stock'});
+
+      }
+      const updateDoc = {
+        $inc: { quantity: -1 },
+      };
+
+      try{
+        const result = await booksCollection.updateOne(filter, updateDoc);
+        if(result.modifiedCount > 0){
+
+          const borrowedBook = {
+            bookId: new ObjectId(id),
+            name,
+            email,
+            returnDate,
+            borrowedDate: new Date(),
+          };
+
+          const borrowedBooksCollection = client.db('libraryManagement').collection('borrowedBooks');
+          const borrowResult = await borrowedBooksCollection.insertOne(borrowedBook);
+
+          if (borrowResult.insertedId){
+            res.send({ success: true, message: 'Book borrowed successfully'});
+          }
+          else{
+            res.send({ success: false, message: 'Failed to add the book to BorrowedBooks'});
+          }
+
+        }
+        else{
+          res.send({ success: false, message: 'Failed to borrow the book'});
+        }
+
+      } catch(error){
+        console.error('Error borrowing book:', error);
+        res.send({success: false, message:'Error borrowing the book'});
+      }
+    });
+    
 
     app.get('/books/:category', async (req, res) => {
       const category = req.params.category;
@@ -120,25 +170,7 @@ async function run() {
       }
     });
 
-    app.post('/borrowBook', async (req, res) => {
-      const {bookId, returnDate, userName, userEmail} = req.body;
-      const filter = { _id: new ObjectId(bookId)};
-      const updateDoc = {
-        $inc: { quantity: -1}
-      };
-      const book = await booksCollection.findOne(filter);
-      if(book.quantity > 0){
-        await booksCollection.updateOne(filter, updateDoc);
-        const borrowEntry = {bookId,returnDate,userName,userEmail};
-        await borrowedBooksCollection.insertOne(borrowEntry);
-        res.send({ success: true, message: 'Book borrowed successfully'});
-
-      }
-      else{
-        res.send({ success: false, message: 'Book out of stock'});
-      }
-    });
-
+    
 
 
   } finally {
