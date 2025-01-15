@@ -95,6 +95,31 @@ async function run() {
       res.send(books);
     })
 
+    // add book
+    app.post('/addBook', async (req,res) => {
+      const { image, name, quantity, author, category, description, rating} = req.body;
+      const newBook = {
+        image,
+        name,
+        quantity,
+        author,
+        category,
+        description,
+        rating,
+      };
+
+      try{
+        const result = await booksCollection.insertOne(newBook);
+        res.send({ success: true, message: 'Book added successfully'});
+
+      } 
+      catch(error){
+        console.error('Failed to add book',error);
+        res.send({ success: false, message: 'Failed to add book'});
+
+      }
+    });
+
     app.post('/borrowBook', async (req, res) => {
       const {bookId, returnDate, userName, userEmail} = req.body;
       const filter = { _id: new ObjectId(bookId)};
