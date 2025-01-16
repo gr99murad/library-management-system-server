@@ -53,6 +53,19 @@ async function run() {
       const{name, email, returnDate} = req.body;
 
       const filter = { _id: new ObjectId(id)};
+      const borrowedBooksCollection = client.db('libraryManagement').collection('borrowedBooks');
+
+
+      // user already borrowed this book check
+      const existingBorrow = await borrowedBooksCollection.findOne({
+        bookId: new ObjectId(id),
+        email: email,
+      });
+
+      if(existingBorrow){
+        return res.send({ success:false, message: 'Already borrowed this book and have not return it yet'});
+
+      }
       const book = await booksCollection.findOne(filter);
 
       if(book.quantity <= 0){
@@ -75,7 +88,6 @@ async function run() {
             borrowedDate: new Date(),
           };
 
-          const borrowedBooksCollection = client.db('libraryManagement').collection('borrowedBooks');
           const borrowResult = await borrowedBooksCollection.insertOne(borrowedBook);
 
           if (borrowResult.insertedId){
